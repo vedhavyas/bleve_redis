@@ -1,7 +1,6 @@
 package bleve_redis
 
 import (
-	"fmt"
 	blevestore "github.com/blevesearch/upsidedown_store_api"
 	"github.com/redis/go-redis/v9"
 )
@@ -27,9 +26,5 @@ func KVStore(client *redis.Client, mo blevestore.MergeOperator) blevestore.KVSto
 
 // Close flushes the connection to Redis and closes it.
 func (s store) Close() (err error) {
-	if err = s.client.Close(); err != nil {
-		return fmt.Errorf("error closing redis connection: %s", err)
-	}
-
 	return nil
 }
