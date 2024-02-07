@@ -17,7 +17,7 @@ type store struct {
 	mo     blevestore.MergeOperator
 }
 
-// Returns a new redis based KVStore
+// KVStore returns a new redis based KVStore
 func KVStore(client *redis.Client, mo blevestore.MergeOperator) blevestore.KVStore {
 	return store{
 		client: client,
