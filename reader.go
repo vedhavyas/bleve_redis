@@ -8,12 +8,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (s store) Reader() (blevestore.KVReader, error) {
-	return s, nil
+type reader struct {
+	client *redis.Client
 }
 
-func (s store) Get(key []byte) ([]byte, error) {
-	result, err := s.client.Get(context.Background(), string(key)).Bytes()
+func (r reader) Get(key []byte) ([]byte, error) {
+	result, err := r.client.Get(context.Background(), string(key)).Bytes()
 	if err != nil {
 		// handle key not found case explicitly
 		if errors.Is(err, redis.Nil) {
@@ -24,13 +24,13 @@ func (s store) Get(key []byte) ([]byte, error) {
 	return result, nil
 }
 
-func (s store) MultiGet(keys [][]byte) ([][]byte, error) {
+func (r reader) MultiGet(keys [][]byte) ([][]byte, error) {
 	var keysStr []string
 	for _, key := range keys {
 		keysStr = append(keysStr, string(key))
 	}
 
-	cmd := s.client.MGet(context.Background(), keysStr...)
+	cmd := r.client.MGet(context.Background(), keysStr...)
 	if cmd.Err() != nil && !errors.Is(cmd.Err(), redis.Nil) {
 		return nil, cmd.Err()
 	}
@@ -47,9 +47,9 @@ func (s store) MultiGet(keys [][]byte) ([][]byte, error) {
 	return results, nil
 }
 
-func (s store) PrefixIterator(prefix []byte) blevestore.KVIterator {
+func (r reader) PrefixIterator(prefix []byte) blevestore.KVIterator {
 	iter := &iterator{
-		client: s.client,
+		client: r.client,
 	}
 
 	prefixStr := string(prefix)
@@ -61,9 +61,9 @@ func (s store) PrefixIterator(prefix []byte) blevestore.KVIterator {
 	return iter
 }
 
-func (s store) RangeIterator(start, end []byte) blevestore.KVIterator {
+func (r reader) RangeIterator(start, end []byte) blevestore.KVIterator {
 	iter := &iterator{
-		client: s.client,
+		client: r.client,
 	}
 
 	err := iter.scanRange(string(start), string(end))
@@ -72,4 +72,8 @@ func (s store) RangeIterator(start, end []byte) blevestore.KVIterator {
 	}
 
 	return iter
+}
+
+func (r reader) Close() (err error) {
+	return r.client.Close()
 }

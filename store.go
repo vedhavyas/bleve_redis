@@ -12,19 +12,37 @@ const (
 
 // store implements the KVStore interface for a Redis.
 type store struct {
-	client *redis.Client
-	mo     blevestore.MergeOperator
+	options *redis.Options
+	mo      blevestore.MergeOperator
 }
 
 // KVStore returns a new redis based KVStore
-func KVStore(client *redis.Client, mo blevestore.MergeOperator) blevestore.KVStore {
+func KVStore(options *redis.Options, mo blevestore.MergeOperator) blevestore.KVStore {
 	return store{
-		client: client,
-		mo:     mo,
+		options: options,
+		mo:      mo,
 	}
+}
+
+func (s store) getClient() *redis.Client {
+	client := redis.NewClient(s.options)
+	return client
 }
 
 // Close flushes the connection to Redis and closes it.
 func (s store) Close() (err error) {
-	return s.client.Close()
+	return nil
+}
+
+func (s store) Reader() (blevestore.KVReader, error) {
+	return reader{
+		client: s.getClient(),
+	}, nil
+}
+
+func (s store) Writer() (blevestore.KVWriter, error) {
+	return writer{
+		client: s.getClient(),
+		mo:     s.mo,
+	}, nil
 }

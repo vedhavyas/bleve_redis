@@ -8,25 +8,26 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (s store) Writer() (blevestore.KVWriter, error) {
-	return s, nil
+type writer struct {
+	client *redis.Client
+	mo     blevestore.MergeOperator
 }
 
-func (s store) NewBatch() blevestore.KVBatch {
+func (w writer) NewBatch() blevestore.KVBatch {
 	b := batch{
-		client:   s.client,
-		pipeline: s.client.TxPipeline(),
-		merge:    blevestore.NewEmulatedMerge(s.mo),
-		mo:       s.mo,
+		client:   w.client,
+		pipeline: w.client.TxPipeline(),
+		merge:    blevestore.NewEmulatedMerge(w.mo),
+		mo:       w.mo,
 	}
 	return &b
 }
 
-func (s store) NewBatchEx(options blevestore.KVBatchOptions) ([]byte, blevestore.KVBatch, error) {
-	return make([]byte, options.TotalBytes), s.NewBatch(), nil
+func (w writer) NewBatchEx(options blevestore.KVBatchOptions) ([]byte, blevestore.KVBatch, error) {
+	return make([]byte, options.TotalBytes), w.NewBatch(), nil
 }
 
-func (s store) ExecuteBatch(b blevestore.KVBatch) error {
+func (w writer) ExecuteBatch(b blevestore.KVBatch) error {
 	batch, ok := b.(*batch)
 	if !ok {
 		return fmt.Errorf("wrong type of batch")
@@ -34,7 +35,7 @@ func (s store) ExecuteBatch(b blevestore.KVBatch) error {
 
 	// first process merges
 	for k, mergeOps := range batch.merge.Merges {
-		existingVal, err := s.client.Get(context.Background(), k).Bytes()
+		existingVal, err := w.client.Get(context.Background(), k).Bytes()
 		if err != nil && !errors.Is(err, redis.Nil) {
 			return err
 		}
@@ -51,4 +52,8 @@ func (s store) ExecuteBatch(b blevestore.KVBatch) error {
 
 	// now execute the batch
 	return batch.Execute()
+}
+
+func (w writer) Close() error {
+	return w.client.Close()
 }
