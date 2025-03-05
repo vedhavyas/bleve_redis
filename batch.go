@@ -39,6 +39,10 @@ func (b *batch) Reset() {
 // Close  resets it
 func (b *batch) Close() error {
 	b.Reset()
+	if b.pipeline != nil {
+		b.pipeline.Discard()
+	}
+	
 	b.pipeline = nil
 	b.merge = nil
 	return nil

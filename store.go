@@ -26,5 +26,5 @@ func KVStore(client *redis.Client, mo blevestore.MergeOperator) blevestore.KVSto
 
 // Close flushes the connection to Redis and closes it.
 func (s store) Close() (err error) {
-	return nil
+	return s.client.Close()
 }
