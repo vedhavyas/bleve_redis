@@ -2,6 +2,7 @@ package bleve_redis
 
 import (
 	"context"
+
 	blevestore "github.com/blevesearch/upsidedown_store_api"
 	"github.com/redis/go-redis/v9"
 )

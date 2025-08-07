@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"sort"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type iterator struct {

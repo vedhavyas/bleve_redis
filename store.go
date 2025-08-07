@@ -1,6 +1,8 @@
 package bleve_redis
 
 import (
+	"context"
+
 	blevestore "github.com/blevesearch/upsidedown_store_api"
 	"github.com/redis/go-redis/v9"
 )
@@ -24,9 +26,13 @@ func KVStore(options *redis.Options, mo blevestore.MergeOperator) blevestore.KVS
 	}
 }
 
-func (s store) getClient() *redis.Client {
+func (s store) getClient() (*redis.Client, error) {
 	client := redis.NewClient(s.options)
-	return client
+	_, err := client.Ping(context.Background()).Result()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 // Close flushes the connection to Redis and closes it.
@@ -35,14 +41,20 @@ func (s store) Close() (err error) {
 }
 
 func (s store) Reader() (blevestore.KVReader, error) {
-	return reader{
-		client: s.getClient(),
-	}, nil
+	client, err := s.getClient()
+	if err != nil {
+		return nil, err
+	}
+	return reader{client: client}, nil
 }
 
 func (s store) Writer() (blevestore.KVWriter, error) {
+	client, err := s.getClient()
+	if err != nil {
+		return nil, err
+	}
 	return writer{
-		client: s.getClient(),
+		client: client,
 		mo:     s.mo,
 	}, nil
 }
